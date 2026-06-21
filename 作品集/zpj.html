@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRAIN STUDIO | 个人作品集</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --coal: #fcfaf7;      /* 主背景：暖白色 */
+            --smoke: #f2ede4;     /* 次背景：浅奶油色 */
+            --ash: #e6dfd3;       /* 边框线：浅沙色 */
+            --stone: #d8cfc0;     /* 辅助线：中性木色 */
+            --fog: #8c857d;       /* 辅助文字：暖灰色 */
+            --bone: #2d2926;      /* 主文字：深咖啡色 */
+            --cream: #ffffff;     /* 高亮：纯白 */
+            --rust: #d67b61;      /* 点缀1：肉桂粉/陶土色 */
+            --amber: #e9ac4f;     /* 点缀2：蜂蜜金 */
+            --moss: #8ba17e;      /* 点缀3：苔藓绿 */
+            
+            --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --snap: cubic-bezier(0.22, 0.68, 0, 1.71);
+            --drag: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --whip: cubic-bezier(0.76, 0, 0.24, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: var(--rust) var(--ash);
+        }
+
+        body {
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+            background: var(--coal);
+            color: var(--bone);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ═══════════════════════════════════════
+           噪点纹理层 - 赋予触感
+        ═══════════════════════════════════════ */
+        .noise-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0.05; /* 明亮背景下略微增加噪点可见度 */
+            mix-blend-mode: multiply; /* 切换混合模式以适应浅色背景 */
+        }
+
+        .noise-layer svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 背景微渐变 - 调整为暖色调 */
+        .bg-atmosphere {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background:
+                radial-gradient(ellipse at 15% 20%, rgba(214, 123, 97, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 85% 80%, rgba(139, 161, 126, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(252, 250, 247, 1) 0%, rgba(242, 237, 228, 1) 100%);
+        }
+
+        /* ═══════════════════════════════════════
+           页面切换遮罩动效
+        ═══════════════════════════════════════ */
+        .page-curtain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10001;
+            display: flex;
+            pointer-events: none;
+        }
+
+        .curtain-strip {
+            flex: 1;
+            background: var(--rust);
+            transform: scaleY(0);
+            transform-origin: top;
+        }
+
+        .page-curtain.active .curtain-strip {
+            animation: curtainDrop 0.8s var(--whip) forwards;
+        }
+
+        .page-curtain.active .curtain-strip:nth-child(1) { animation-delay: 0ms; }
+        .page-curtain.active .curtain-strip:nth-child(2) { animation-delay: 60ms; }
+        .page-curtain.active .curtain-strip:nth-child(3) { animation-delay: 120ms; }
+        .page-curtain.active .curtain-strip:nth-child(4) { animation-delay: 180ms; }
+        .page-curtain.active .curtain-strip:nth-child(5) { animation-delay: 240ms; }
+
+        @keyframes curtainDrop {
+            0% { transform: scaleY(0); transform-origin: top; }
+            45% { transform: scaleY(1); transform-origin: top; }
+            55% { transform: scaleY(1); transform-origin: bottom; }
+            100% { transform: scaleY(0); transform-origin: bottom; }
+        }
+
+        /* ═══════════════════════════════════════
+           导航
+        ═══════════════════════════════════════ */
+        .nav-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 28px 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            /* 明亮模式下移除 mix-blend-mode 以保持色彩温馨 */
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-icon {
+            width: 28px;
+            height: 28px;
+            border: 2px solid var(--bone);
+            position: relative;
+            transition: transform 0.5s var(--spring);
+        }
+
+        .nav-icon::before {
+            content: "";
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 10px;
+            height: 10px;
+            background: var(--rust);
+            transition: all 0.4s var(--snap);
+        }
+
+        .nav-brand:hover .nav-icon {
+            transform: rotate(45deg);
+        }
+
+        .nav-brand:hover .nav-icon::before {
+            top: 6px;
+            left: 6px;
+            width: 14px;
+            height: 14px;
+            background: var(--amber);
+        }
+
+        .nav-brand span {
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 36px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--bone);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            position: relative;
+            padding-bottom: 4px;
+            transition: color 0.4s var(--drag);
+        }
+
+        .nav-links a::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--rust);
+            transition: width 0.5s var(--spring);
+        }
+
+        .nav-links a:hover {
+            color: var(--rust);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        /* ═══════════════════════════════════════
+           页面Section基础样式
+        ═══════════════════════════════════════ */
+        .page-section {
+            min-height: 100vh;
+            padding: 140px 48px 100px;
+            position: relative;
+        }
+
+        /* ═══════════════════════════════════════
+           版头 HERO区域
+        ═══════════════════════════════════════ */
+        .hero-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 0;
+            padding-top: 200px;
+            padding-bottom: 160px;
+        }
+
+        .hero-name {
+            grid-column: 1 / -1;
+            font-size: clamp(4rem, 12vw, 10rem);
+            font-weight: 900;
+            line-height: 0.85;
+            text-transform: uppercase;
+            letter-spacing: -4px;
+            padding-left: 5%;
+            opacity: 0;
+            transform: translateY(60px) skewY(3deg);
+            animation: heroReveal 1.2s var(--spring) 0.3s forwards;
+        }
+
+        @keyframes heroReveal {
+            to {
+                opacity: 1;
+                transform: translateY(0) skewY(0deg);
+            }
+        }
+
+        .hero-name .stroke-text {
+            -webkit-text-stroke: 1.5px var(--bone);
+            color: transparent;
+        }
+
+        .hero-intro-wrapper {
+            grid-column: 2;
+            padding-top: 60px;
+            padding-right: 10%;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            opacity: 0;
+            transform: translateX(40px);
+            animation: slideInRight 1s var(--drag) 0.8s forwards;
+        }
+
+        @keyframes slideInRight {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .hero-intro {
+            font-size: 18px;
+            line-height: 1.8;
+            font-weight: 300;
+            max-width: 420px;
+            text-align: right;
+            border-right: 3px solid var(--rust);
+            padding-right: 24px;
+        }
+
+        .hero-scroll-hint {
+            position: absolute;
+            bottom: 60px;
+            left: 48px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--fog);
+        }
+
+        .scroll-line {
+            width: 60px;
+            height: 1px;
+            background: var(--ash);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scroll-line::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--rust);
+            animation: scrollPulse 2s var(--drag) infinite;
+        }
+
+        @keyframes scrollPulse {
+            0% { left: -100%; }
+            50% { left: 0%; }
+            100% { left: 100%; }
+        }
+
+        /* ═══════════════════════════════════════
+           作品导览区
+        ═══════════════════════════════════════ */
+        .works-section {
+            padding-top: 120px;
+        }
+
+        .section-label {
+            font-size: 11px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--fog);
+            margin-bottom: 60px;
+            padding-left: 5%;
+        }
+
+        .works-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            grid-template-rows: auto auto;
+            gap: 40px;
+            padding: 0 5%;
+        }
+
+        .work-card {
+            position: relative;
+            overflow: hidden;
+            background: var(--smoke);
+            border: 1px solid var(--ash);
+            transition: transform 0.6s var(--spring), box-shadow 0.6s var(--drag);
+            cursor: pointer;
+        }
+
+        .work-card:nth-child(1) {
+            grid-row: span 2;
+            min-height: 600px;
+        }
+
+        .work-card:nth-child(2) {
+            min-height: 280px;
+            transform: translateY(40px);
+        }
+
+        .work-card:nth-child(3) {
+            min-height: 280px;
+            transform: translateY(40px);
+        }
+
+        .work-card:hover {
+            transform: translateY(-8px) scale(1.01);
+            box-shadow: 0 30px 80px rgba(45, 41, 38, 0.1);
+            border-color: var(--stone);
+        }
+
+        .work-card:nth-child(2):hover,
+        .work-card:nth-child(3):hover {
+            transform: translateY(32px) scale(1.01);
+        }
+
+        .card-visual {
+            width: 100%;
+            height: 70%;
+            min-height: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-visual img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .card-visual::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, transparent 40%, rgba(242,237,228,0.6) 100%);
+            z-index: 2;
+        }
+
+        .card-content {
+            padding: 28px;
+            position: relative;
+            z-index: 3;
+        }
+
+        .card-type {
+            font-size: 10px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--rust);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .card-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            transition: color 0.4s var(--drag);
+        }
+
+        .work-card:hover .card-title {
+            color: var(--rust);
+        }
+
+        .card-desc {
+            font-size: 14px;
+            color: var(--fog);
+            line-height: 1.6;
+        }
+
+        .card-arrow {
+            position: absolute;
+            bottom: 28px;
+            right: 28px;
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--ash);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s var(--spring);
+        }
+
+        .card-arrow svg {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.5s var(--spring);
+        }
+
+        .work-card:hover .card-arrow {
+            background: var(--rust);
+            border-color: var(--rust);
+            color: var(--cream);
+        }
+
+        .work-card:hover .card-arrow svg {
+            transform: translate(3px, -3px);
+        }
+
+        /* ═══════════════════════════════════════
+           单个作品展示区
+        ═══════════════════════════════════════ */
+        .detail-section {
+            padding: 160px 48px;
+            border-top: 1px solid var(--ash);
+        }
+
+        .detail-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            margin-bottom: 80px;
+            align-items: end;
+        }
+
+        .detail-title-group {
+            padding-left: 5%;
+        }
+
+        .detail-project-type {
+            font-size: 11px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--rust);
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .detail-project-name {
+            font-size: clamp(2.5rem, 5vw, 4.5rem);
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -2px;
+        }
+
+        .detail-meta {
+            padding-right: 10%;
+            text-align: right;
+        }
+
+        .detail-meta p {
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--fog);
+        }
+
+        /* 设计说明 */
+        .detail-explanation {
+            padding: 60px 5%;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 40px;
+            border-top: 1px solid var(--ash);
+            margin-top: 60px;
+        }
+
+        .explain-label {
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--fog);
+            writing-mode: vertical-lr;
+            transform: rotate(180deg);
+            padding-top: 10px;
+        }
+
+        .explain-content {
+            max-width: 600px;
+        }
+
+        .explain-content h3 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--bone);
+        }
+
+        .explain-content p {
+            font-size: 15px;
+            line-height: 1.9;
+            color: var(--fog);
+            margin-bottom: 16px;
+        }
+
+        .explain-tags {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .tag {
+            font-size: 11px;
+            letter-spacing: 1px;
+            padding: 6px 14px;
+            border: 1px solid var(--stone);
+            color: var(--bone);
+            transition: all 0.4s var(--spring);
+        }
+
+        .tag:hover {
+            background: var(--rust);
+            border-color: var(--rust);
+            color: var(--cream);
+            transform: translateY(-2px);
+        }
+
+        /* ═══════════════════════════════════════
+           滚动出现动画
+        ═══════════════════════════════════════ */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s var(--drag), transform 0.8s var(--spring);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reveal-delay-1 { transition-delay: 0.1s; }
+        .reveal-delay-2 { transition-delay: 0.2s; }
+        .reveal-delay-3 { transition-delay: 0.3s; }
+
+        /* ═══════════════════════════════════════
+           页脚
+        ═══════════════════════════════════════ */
+        footer {
+            padding: 80px 48px;
+            border-top: 1px solid var(--ash);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .footer-left p {
+            font-size: 13px;
+            color: var(--fog);
+            line-height: 1.8;
+        }
+
+        .footer-right {
+            text-align: right;
+        }
+
+        .footer-right p {
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--stone);
+        }
+
+        /* ===================== 新增6图网格样式 ===================== */
+        .showcase-item {
+            background: var(--smoke);
+            border: 1px solid var(--ash);
+            overflow: hidden;
+            transition: all 0.5s var(--spring);
+        }
+        .showcase-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .showcase-item:hover {
+            border-color: var(--stone);
+            transform: translateY(-4px);
+            box-shadow: 0 15px 40px rgba(45,41,38,0.08);
+        }
+
+        /* ═══════════════════════════════════════
+           响应式
+        ═══════════════════════════════════════ */
+        @media (max-width: 900px) {
+            .hero-section {
+                grid-template-columns: 1fr;
+                padding-top: 140px;
+            }
+
+            .hero-intro-wrapper {
+                align-items: flex-start;
+                padding-right: 0;
+                padding-left: 5%;
+            }
+
+            .hero-intro {
+                text-align: left;
+                border-right: none;
+                border-left: 3px solid var(--rust);
+                padding-right: 0;
+                padding-left: 24px;
+            }
+
+            .works-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .work-card:nth-child(2),
+            .work-card:nth-child(3) {
+                transform: none;
+            }
+
+            .detail-header {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .detail-meta {
+                text-align: left;
+                padding-right: 0;
+            }
+
+            /* 详情6图手机端单列 */
+            .detail-showcase {
+                grid-template-columns: 1fr !important;
+            }
+
+            .nav-links {
+                gap: 20px;
+            }
+
+            footer {
+                flex-direction: column;
+                gap: 30px;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 噪点纹理 -->
+    <div class="noise-layer">
+        <svg>
+            <filter id="noiseFilter">
+                <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch"/>
+                <feColorMatrix type="saturate" values="0"/>
+            </filter>
+            <rect width="100%" height="100%" filter="url(#noiseFilter)"/>
+        </svg>
+    </div>
+
+    <!-- 背景渐变 -->
+    <div class="bg-atmosphere"></div>
+
+    <!-- 页面切换遮罩 -->
+    <div class="page-curtain" id="pageCurtain">
+        <div class="curtain-strip"></div>
+        <div class="curtain-strip"></div>
+        <div class="curtain-strip"></div>
+        <div class="curtain-strip"></div>
+        <div class="curtain-strip"></div>
+    </div>
+
+    <!-- 导航 -->
+    <nav class="nav-bar">
+        <div class="nav-brand">
+            <div class="nav-icon"></div>
+            <span>Grain Studio</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#works" data-nav>作品</a></li>
+            <li><a href="#restaurant" data-nav>点餐App</a></li>
+            <li><a href="#web" data-nav>响应式网页</a></li>
+            <li><a href="#game" data-nav>游戏界面</a></li>
+        </ul>
+    </nav>
+
+    <!-- ═══════════ 版头 ═══════════ -->
+    <section class="page-section hero-section" id="hero">
+        <h1 class="hero-name">
+            <span class="stroke-text">触感</span><br>
+            设计
+        </h1>
+        <div class="hero-intro-wrapper">
+            <p class="hero-intro">
+                我是<strong>陈禹同</strong>，一名杭州电子科技大学数字媒体技术专业的学生，这是我的界面设计个人作品集。            </p>
+        </div>
+        <div class="hero-scroll-hint">
+            <div class="scroll-line"></div>
+            <span>向下探索</span>
+        </div>
+    </section>
+
+    <!-- ═══════════ 作品导览 ═══════════ -->
+    <section class="page-section works-section" id="works">
+        <p class="section-label reveal">Selected Works</p>
+        <div class="works-grid">
+            <!-- 作品1: 餐厅点餐App 首页卡片替换真实图片 -->
+            <div class="work-card reveal" onclick="navigateTo('#restaurant')">
+                <div class="card-visual">
+                    <img src="img/cover-restaurant.jpg" alt="轻食点餐App预览图">
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">校园轻食店点餐系统</h3>
+                </div>
+                <div class="card-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M7 17L17 7M17 7H7M17 7V17"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- 作品2: 响应式网页 首页卡片替换真实图片 -->
+            <div class="work-card reveal reveal-delay-1" onclick="navigateTo('#web')">
+                <div class="card-visual">
+                    <img src="img/cover-web.jpg" alt="R.E.P.O游戏官网预览图">
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title"> 响应式网页</h3>
+                </div>
+                <div class="card-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M7 17L17 7M17 7H7M17 7V17"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- 作品3: 游戏界面 首页卡片替换真实图片 -->
+            <div class="work-card reveal reveal-delay-2" onclick="navigateTo('#game')">
+                <div class="card-visual">
+                    <img src="img/cover-game.jpg" alt="篮球卡牌游戏UI预览图">
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">卡牌游戏界面</h3>
+                </div>
+                <div class="card-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M7 17L17 7M17 7H7M17 7V17"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════ 项目1详情：餐厅点餐App（6张图片3列网格） ═══════════ -->
+    <section class="detail-section" id="restaurant">
+        <div class="detail-header reveal">
+            <div class="detail-title-group">
+                <p class="detail-project-type">Mobile App · UI/UX Design</p>
+                <h2 class="detail-project-name"><br>青禾小馆健康轻食点餐小程序</h2>
+            </div>
+            <div class="detail-meta">
+                <p>本地轻食餐饮移动端 UI 界面</p>
+            </div>
+        </div>
+
+        <div class="detail-showcase reveal" style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-bottom:60px; padding:0 5%;">
+            <div class="showcase-item" style="aspect-ratio:9/16;">
+                <img src="img/restaurant-1.jpg" alt="轻食点餐首页">
+            </div>
+            <div class="showcase-item" style="aspect-ratio:9/16;">
+                <img src="img/restaurant-2.jpg" alt="门店列表页">
+            </div>
+            <div class="showcase-item" style="aspect-ratio:9/16;">
+                <img src="img/restaurant-3.jpg" alt="菜品详情页">
+            </div>
+            <div class="showcase-item" style="aspect-ratio:9/16;">
+                <img src="img/restaurant-4.jpg" alt="购物车页面">
+            </div>
+            <div class="showcase-item" style="aspect-ratio:9/16;">
+                <img src="img/restaurant-5.jpg" alt="订单页面">
+            </div>
+            <div class="showcase-item" style="aspect-ratio:9/16;">
+                <img src="img/restaurant-6.jpg" alt="个人中心页">
+            </div>
+        </div>
+
+        <div class="detail-explanation reveal">
+            <div class="explain-content">
+                <h3>用触感重新定义点餐</h3>
+                <p>整体以低饱和清新草木绿为主视觉，浅米白柔和底色，板块划分清晰；区分外送 / 自提服务、门店列表，搭配生鲜沙拉实拍图，贴合健康低脂轻食定位，底部导航规范点餐、订单等核心操作入口。</p>
+                <div class="explain-tags">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════ 项目2详情：响应式网页（6张图片3列网格） ═══════════ -->
+    <section class="detail-section" id="web">
+        <div class="detail-header reveal">
+            <div class="detail-title-group">
+                <p class="detail-project-type">Web Design · Responsive Layout</p>
+                <h2 class="detail-project-name"><br>R.E.P.O. 游戏官网</h2>
+            </div>
+            <div class="detail-meta">
+                <p>游戏产品宣传 PC 端网页 UI 设计</p>
+            </div>
+        </div>
+
+        <div class="detail-showcase reveal" style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-bottom:60px; padding:0 5%;">
+            <div class="showcase-item" style="aspect-ratio:16/10;">
+                <img src="img/web-1.jpg" alt="官网首页大屏">
+            </div>
+            <div class="showcase-item" style="aspect-ratio:16/10;">
+                <img src="img/web-2.jpg" alt="怪物图鉴板块">
+            </div>
+            <div class="showcase-item" style="aspect-ratio:16/10;">
+                <img src="img/web-3.jpg" alt="武器道具展示">
+            </div>
+            <div class="showcase-item" style="aspect-ratio:16/10;">
+                <img src="img/web-4.jpg" alt="游戏攻略页面">
+            </div>
+            <div class="showcase-item" style="aspect-ratio:16/10;">
+                <img src="img/web-5.jpg" alt="地图模组页面">
+            </div>
+            <div class="showcase-item" style="aspect-ratio:16/10;">
+                <img src="img/web-6.jpg" alt="移动端适配预览">
+            </div>
+        </div>
+
+        <div class="detail-explanation reveal">
+            <div class="explain-content">
+                <h3>用响应重新定义官网</h3>
+                <p>整体采用暗黑赛博工业风格，以纯黑为基底，搭配荧光绿、金属橙做视觉点缀；顶部导航整合游戏核心板块，主视觉突出游戏怪物形象，功能卡片分区规整，黄亮色按钮强化购买、查看等核心行动点，完美贴合惊悚合作游戏压抑刺激的氛围。</p>
+                <div class="explain-tags">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════ 项目3详情：游戏界面（6张图片3列网格） ═══════════ -->
+    <section class="detail-section" id="game">
+        <div class="detail-header reveal">
+            <div class="detail-title-group">
+                <p class="detail-project-type">Game UI · HUD System</p>
+                <h2 class="detail-project-name"><br>传奇经理人篮球卡牌手游UI 界面</h2>
+            </div>
+            <div class="detail-meta">
+                <p>篮球题材卡牌养成类手游移动端游戏 UI</p>
+            </div>
+        </div>
+
+        <div class="detail-showcase reveal" style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-bottom:60px; padding:0 5%;">
+            <div class="showcase-item" style="aspect-ratio:16/9;">
+                <img src="img/game-1.jpg" alt="游戏主界面">
+            </div>
+            <div class="showcase-item" style="aspect-ratio:16/9;">
+                <img src="img/game-2.jpg" alt="球员属性界面">
+            </div>
+            <div class="showcase-item" style="aspect-ratio:16/9;">
+                <img src="img/game-3.jpg" alt="背包道具界面">
+            </div>
+            <div class="showcase-item" style="aspect-ratio:16/9;">
+                <img src="img/game-4.jpg" alt="常规赛赛程界面">
+            </div>
+            <div class="showcase-item" style="aspect-ratio:16/9;">
+                <img src="img/game-5.jpg" alt="每日任务奖励页">
+            </div>
+            <div class="showcase-item" style="aspect-ratio:16/9;">
+                <img src="img/game-6.jpg" alt="球星抽卡界面">
+            </div>
+        </div>
+
+        <div class="detail-explanation reveal">
+            <div class="explain-content">
+                <h3>每个像素都有重量</h3>
+                <p>整体采用潮流美式篮球漫画画风，以深蓝、黑金为主色调，搭配紫、金高光凸显竞技质感；六套界面覆盖主页、球员养成、背包、赛程、任务、抽卡核心玩法，功能分区清晰，战力、资源数值直观醒目，贴合篮球竞技养成的游戏定位。</p>
+                <div class="explain-tags">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════ 页脚 ═══════════ -->
+    <footer>
+        <div class="footer-left">
+            <p>© 2026 陈禹同 / Grain Studio</p>
+            <p>界面应该有触感和灵魂</p>
+        </div>
+        <div class="footer-right">
+            <p>Bright & Warm tones. Tactile surfaces.</p>
+            <p>Organic layouts. Meaningful motions.</p>
+        </div>
+    </footer>
+
+    <!-- ═══════════ JavaScript 保持不变 ═══════════ -->
+    <script>
+        // ─── 页面切换动效 ───
+        function navigateTo(target) {
+            const curtain = document.getElementById('pageCurtain');
+            curtain.classList.add('active');
+
+            setTimeout(() => {
+                const element = document.querySelector(target);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'auto' });
+                }
+            }, 400);
+
+            setTimeout(() => {
+                curtain.classList.remove('active');
+            }, 1000);
+        }
+
+        // 导航链接绑定页面切换
+        document.querySelectorAll('[data-nav]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = this.getAttribute('href');
+                navigateTo(target);
+            });
+        });
+
+        // ─── 滚动出现动画 ───
+        const revealElements = document.querySelectorAll('.reveal');
+
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, {
+            threshold: 0.15,
+            rootMargin: '0px 0px -60px 0px'
+        });
+
+        revealElements.forEach(el => revealObserver.observe(el));
+
+        // ─── 鼠标悬停反馈 ───
+        document.querySelectorAll('.work-card').forEach(card => {
+            card.addEventListener('mousemove', function(e) {
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = (y - centerY) / centerY * -4;
+                const rotateY = (x - centerX) / centerX * 4;
+
+                this.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px) scale(1.01)`;
+            });
+
+            card.addEventListener('mouseleave', function() {
+                this.style.transition = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                this.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg) translateY(0) scale(1)';
+                setTimeout(() => {
+                    this.style.transition = '';
+                }, 600);
+            });
+        });
+
+        // ─── 导航滚动高亮 ───
+        const sections = document.querySelectorAll('section[id]');
+        window.addEventListener('scroll', () => {
+            const scrollY = window.scrollY + 200;
+            sections.forEach(section => {
+                const top = section.offsetTop;
+                const height = section.offsetHeight;
+                const id = section.getAttribute('id');
+                const link = document.querySelector(`.nav-links a[href="#${id}"]`);
+                if (link) {
+                    if (scrollY >= top && scrollY < top + height) {
+                        link.style.color = 'var(--rust)';
+                    } else {
+                        link.style.color = '';
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
